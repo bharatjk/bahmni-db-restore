@@ -1,0 +1,18 @@
+# Script to Start Docker Container execute restore job and stop Container.
+echo "=========== Start `date +%D,%T` ==================================="
+
+if  [ $# -lt 1 ] ; then
+    echo "Usage: Docker-Run [ mysql | pg ]"
+    exit 1
+fi
+
+DB=$DB
+docker run --privileged -d --name=bahmni$DB -e container=docker -v /root/:/data  bjkdoc/bahmni-$DB-restore 
+sleep 15
+docker cp /etc/timezone bahmni$DB:/etc/timezone
+docker exec -it bahmni$DB  /data/restore.sh $DB
+#docker exec -it bahmni$DB  bash
+docker  stop bahmni$DB
+docker rm bahmni$DB
+
+echo "=========== End `date +%D,%T` ==================================="
