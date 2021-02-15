@@ -1,4 +1,13 @@
 # Script to Start Docker Container execute restore job and stop Container.
+
+function CheckExit ()
+{
+     if [ $? != 0 ] ;then
+        echo "FAILED: $MSG" 
+        exit 1
+     fi
+}
+
 echo "=========== Start `date +%D,%T` ==================================="
 
 if  [ $# -lt 1 ] ; then
@@ -6,11 +15,19 @@ if  [ $# -lt 1 ] ; then
     exit 1
 fi
 
-DB=$DB
+DB=$1
+MSG="docker run"
 docker run --privileged -d --name=bahmni$DB -e container=docker -v /root/:/data  bjkdoc/bahmni-$DB-restore 
+CheckExit
 sleep 15
-docker cp /etc/timezone bahmni$DB:/etc/timezone
+#docker cp /etc/timezone bahmni$DB:/etc/timezone
+MSG="Set TimeZone for Docker Container"
+docker exec bahmni$DB rm -f /etc/localtime
+docker exec bahmni$DB ln -s  /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
+CheckExit
+MSG="Run Restore Job"
 docker exec -it bahmni$DB  /data/restore.sh $DB
+CheckExit
 #docker exec -it bahmni$DB  bash
 docker  stop bahmni$DB
 docker rm bahmni$DB
