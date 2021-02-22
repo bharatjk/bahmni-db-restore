@@ -1,4 +1,4 @@
 #MIN  HOUR  DOM  MON DOW   		 CMD
 #0-59 0-23 0-31 0-12 0-6(0-Sunday) 
-1 5 * * 0  /root/Docker_run_bahmniDBRestore mysql >/root/restore-mysql-cron.log 2>&1
-15 5 * * 0  /root/Docker_run_bahmniDBRestore pg >/root/restore-pg-cron.log 2>&1
+1 5 * * 0  /root/Docker_run_bahmniDBRestore -dmysql >/root/restore-mysql-cron.log 2>&1
+15 5 * * 0  /root/Docker_run_bahmniDBRestore -dpg >/root/restore-pg-cron.log 2>&1
