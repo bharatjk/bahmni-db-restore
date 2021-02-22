@@ -1,7 +1,6 @@
 # bahmni-db-restore
 
 This script tests the sanctity of Bahmni backup by restoring it using docker.
-#
 # inputs supported options are -d -c -e -n -l
 #  
 #    -d is for dbname, this is compulsory input,  currently supported input for this is [ db or mysql ]
@@ -13,6 +12,7 @@ This script tests the sanctity of Bahmni backup by restoring it using docker.
 #  You can use only one option from -l or -n
 #    -n Week number of backup file. e.g. -n2 [1-5] 
 #    -l This will restore from last available backups in client folder. e.g. -l
+few Example
 # TO restore all client backup for current week
   Docker_run_bahmniDBRestore -dpg
 # To restore Specific client only use -c Customername
@@ -21,7 +21,7 @@ This script tests the sanctity of Bahmni backup by restoring it using docker.
   Docker_run_bahmniDBRestore -dpg -ecust03
 # To restore from Specific week number backup file use -n  e.g. openerp2.tar.gz
   Docker_run_bahmniDBRestore -dpg -n2
-# To restore frnm last available backup file use -l
+# To restore from last available backup file use -l
   Docker_run_bahmniDBRestore -dpg -l
 
 ## Basic Setup
