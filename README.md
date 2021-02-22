@@ -1,9 +1,21 @@
 # bahmni-db-restore
 
 This script tests the sanctity of Bahmni backup by restoring it using docker.
+#
+# inputs supported options are -d -c -e -n -l
+#  
+#    -d is for dbname, this is compulsory input,  currently supported input for this is [ db or mysql ]
+# By default restore will scan backup files in /data/backup/* and try to restore for current week
+#    All other options are optional
+#  You can use only one option from -c or -e
+#    -c Client name, this will  restore only for supplied client list. e.g. -ccust1 or -c"cust1,cust2"
+#    -e Exclude client name, this will exclude given client from restore. e.g. -ecust1 or -e"cust1,cust2"
+#  You can use only one option from -l or -n
+#    -n Week number of backup file. e.g. -n2 [1-5] 
+#    -l This will restore from last available backups in client folder. e.g. -l
 
 ## Basic Setup
-1. Copy all three files to /root on host
+1. Copy all four files to /root on host
 2. Copy all the backups to be tested under /root/backup/customer1, /root/backup/customer2...etc
 3. The script can be run in the following modes:
 
@@ -12,11 +24,11 @@ This script tests the sanctity of Bahmni backup by restoring it using docker.
   
   For mysql restore
     
-    Docker_run_bahmniDBRestore mysql
+    Docker_run_bahmniDBRestore -dmysql
   
   For pg restore
     
-    Docker_run_bahmniDBRestore pg
+    Docker_run_bahmniDBRestore -dpg
 
 ### Mode - Using docker command
   On Host to restore mysql or pg set DB depending on which database (mysql/pg) is to restored and run docker.
