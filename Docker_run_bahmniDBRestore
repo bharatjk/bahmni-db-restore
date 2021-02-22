@@ -1,21 +1,44 @@
+#!/bin/bash
+#
 # Script to Start Docker Container execute restore job and stop Container.
+# inputs supported options are -d -c -e -n -l
+#  By default restore will scan backup files in /data/backup/* and try to restore for current week
+#    -d is for dbname, this is compulsory input,  currently supported input for this is [ db or mysql ]
+#    All other options are optional
+#  You can use only one option from -c or -e
+#    -c Client name, this will  restore only for supplied client list. e.g. -ccust1 or -c"cust1,cust2"
+#    -e Exclude client name, this will exclude given client from restore. e.g. -ecust1 or -e"cust1,cust2"
+#  You can use only one option from -l or -n
+#    -n Week number of backup file. e.g. -n2 [1-5] 
+#    -l This will restore from last available backups in client folder. e.g. -l
+#
 
-function CheckExit ()
+CleanContainer () 
+{
+docker  stop bahmni$DB
+docker rm bahmni$DB
+}
+
+CheckExit () 
 {
      if [ $? != 0 ] ;then
         echo "FAILED: $MSG" 
+	docker container ps |grep bahmni$DB >/dev/null 2>&1
+	if [ $? = 0 ] ; then
+ 	 CleanContainer 
+	fi
         exit 1
      fi
 }
 
 echo "=========== Start `date +%D,%T` ==================================="
+#Below script will validate all inputs 
+export BASEDIR=/root
+. /root/verifyInputs.sh $@
 
-if  [ $# -lt 1 ] ; then
-    echo "Usage: Docker-Run [ mysql | pg ]"
-    exit 1
-fi
+#/root/restore.sh $RESTORE
 
-DB=$1
+#MAIN Docker Run start
 MSG="docker run"
 docker run --privileged -d --name=bahmni$DB -e container=docker -v /root/:/data  bjkdoc/bahmni-$DB-restore 
 CheckExit
@@ -26,10 +49,9 @@ docker exec bahmni$DB rm -f /etc/localtime
 docker exec bahmni$DB ln -s  /usr/share/zoneinfo/Asia/Kolkata /etc/localtime
 CheckExit
 MSG="Run Restore Job"
-docker exec -it bahmni$DB  /data/restore.sh $DB
+docker exec -it bahmni$DB  /data/restore.sh $RESTORE
 CheckExit
 #docker exec -it bahmni$DB  bash
-docker  stop bahmni$DB
-docker rm bahmni$DB
+CleanContainer
 
 echo "=========== End `date +%D,%T` ==================================="
