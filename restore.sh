@@ -2,45 +2,51 @@
 #Script to restore mysql backup and write output to status file
 #
 
+#BASEDIR=/root
+#. /root/verifyInputs.sh
+export BASEDIR=/data
+. /data/verifyInputs.sh 
+
+
+if [ -n  "$WeekNum" ] ; then thisWeek=$WeekNum
+elif [ -n "$lastbackup" ] ; then thisWeek="*"
+  else thisWeek=$((($(date +%-d)-1)/7+1))
+fi
+#thisWeek=$((($(date +%-d -d"last Sun")-1)/7+1))
+
+echo RESTORE in restore.sh=$RESTORE OnlyClient=$OnlyClient DB=$DB Exclude=$Exclude WeekNum=$WeekNum lastbackup=$lastbackup GREP=$GREP 
+echo thisWeek=$thisWeek
+
 #TZ is set via Docker run by copying host timezone file.Set below TZ to over ride.
 #export TZ=Asia/Kolkata
-[ -f  /etc/timezone ] && export TZ=`cat /etc/timezone`
-BASEDIR=/data
+
 SRC_BACKUPDIR=${BASEDIR}/backup
-DB=$1
 Outfile=${BASEDIR}/${DB}-Restore_status.txt
 Restorelog=${BASEDIR}/${DB}-Restore.log
-thisWeek=$((($(date +%-d)-1)/7+1))
 
-if  [ $# -lt 1 ] ; then
-    echo "Usage: restore [ mysql | pg ]"
-    exit 1
-fi
-
-
-
-function CheckExit ()
+CheckExit ()
 {
      if [ $? != 0 ] ;then
-	 
-		echo "FAILED: $MSG" >>$Restorelog
-		echo "Failed,`date +%D,%T`,$Client,$backuprootFolder,Failed Task: $MSG " >>$Outfile
-		cd ..
-		continue
+	echo "FAILED: $MSG" >>$Restorelog
+	echo "Failed,`date +%D,%T`,$Client,$backuprootFolder,Failed Task: $MSG " >>$Outfile
+	cd ..
+	CONTINUE=continue
+      else
+	CONTINUE=""
      fi
 }
 
-function LogExit0 ()
+LogExit0 ()
 {
 	if [ $? = 0 ] ;then 
 	    echo "Success,`date +%D,%T`,$Client,$backuprootFolder,$BackupTarFile,$BackupInfoTxtFile" >>$Outfile 
-	     rm -f $Restorelog
+            rm -f $Restorelog
 	else
 	    echo "Failed,`date +%D,%T`,$Client,$backuprootFolder,$BackupTarFile,$BackupInfoTxtFile" >>$Outfile
 	fi
 }
 
-function doRestore ()
+doRestore ()
 {
 
 	OPTIONS=$1
@@ -50,45 +56,54 @@ function doRestore ()
 
 }
 
-function mysqlRestore ()
+mysqlRestore ()
 { 
-
-BackupTarFile=${Prefix}${thisWeek}.tar.gz
-BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt
-
-cd $SRC_BACKUPDIR
-
-for Client in `ls -l|grep ^d|awk '{print $NF}'`
-   do
+  BackupTarFile=${Prefix}${thisWeek}.tar.gz
+  BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt	   
+		
+  cd $SRC_BACKUPDIR
+  for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
+     do
        cd $Client
 	   
-	   MSG="Check input tar files"
-		[  -f  $BackupTarFile ] 
-		CheckExit
-		
+	   MSG="Check last backup files or set backup files"
+       [ -n "$lastbackup" ] && thisWeek=`ls -t $BackupTarFile  2>/dev/null|head -1|cut -c8` 
+       if [ -n "$thisWeek" ] ; then
+			 BackupTarFile=${Prefix}${thisWeek}.tar.gz
+		     BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt	
+		  else
+		    CheckExit
+		    $CONTINUE
+       fi
+	   		
+		MSG="Check input backup files"
+    	[  -s  $BackupTarFile -a  -s  $BackupInfoTxtFile ] 
+	    CheckExit
+        echo 	BackupTarFile=$BackupTarFile BackupInfoTxtFile=$BackupInfoTxtFile	
+	    $CONTINUE
+	
 		#Extract bckup to /data/openmrs
-		   tar xf $BackupTarFile -C /
+	       tar xf $BackupTarFile -C /
 		   MSG="Get backuprootFolder name"
 		   backuprootFolder=`ls /data/openmrs/`
 		   CheckExit
-		   
-		 MSG="Check input backup info files"  
-		 [  -f  $BackupInfoTxtFile ] 
-		 CheckExit
-		 
+
 		 MSG="Copy BackupInfoTxtFile"
 		cp $BackupInfoTxtFile  /data/openmrs/backup_info.txt
 		CheckExit
-		
-           # Call doRestore Function
+		$CONTINUE
+	
+          # Call doRestore Function
 		   MSG="doRestore"
 		   doRestore openmrs
 		   CheckExit
-		   
+		   $CONTINUE
+
 		   #Check Restore status
 		   MSG="Check Final Restore status"
 		   mysql -B -u root -pP@ssw0rd openmrs -e "select * from location;"
 		   LogExit0
+		$CONTINUE
 		   
 		   cd ..
 		   [ -d /data/openmrs/${backuprootFolder} ] && rm -rf /data/openmrs/$backuprootFolder
@@ -97,42 +112,63 @@ done
 }
 
 
-function pgRestore ()
+pgRestore ()
 {
-
+	 BackupTarFile=${Prefix}${thisWeek}.tar.gz
+	 BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
+	 BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
+	   
 RESTORE_BASE=/var/lib/pgbackrest/
 [ ! -d /var/log/backrest/  ] && mkdir /var/log/backrest/ 
+
+
 cd $SRC_BACKUPDIR
 
-BackupTarFile=${Prefix}${thisWeek}.tar.gz
-BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
-BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
-
-for Client in `ls -l|grep ^d|awk '{print $NF}'`
+for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
    do
        cd $Client
-	   MSG="Check input backup files"
+	   echo PWD=$PWD
+
+       MSG="Set backup files"
+	   [ -n "$lastbackup" ] && thisWeek=`ls -t $BackupTarFile  2>/dev/null|head -1|cut -c8` 
+       if [ -n "$thisWeek" ] ; then
+			BackupTarFile=${Prefix}${thisWeek}.tar.gz
+			BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
+			BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
+          else
+		   CheckExit
+		   $CONTINUE
+       fi
+
+	    MSG="Check input backup files"
     	[  -f  $BackupTarFile -a  -f  $BackupInfoTxtFile -a  -f  $BackupInfoFile ] 
 	    CheckExit
+		$CONTINUE
 
-		#Extract bckup to /var/lib/pgbackrest/
+
+		#Extract bckup to /var/lib/pgbackrest/ 
 		tar xf $BackupTarFile -C /
 		MSG="Get backuprootFolder name"
 		backuprootFolder=`ls  -d ${RESTORE_BASE}/backup/bahmni-postgres/2*|awk -F/ '{print $NF}'`
 		CheckExit
-
+		$CONTINUE
+		
 		MSG="Copy BackupInfoTxtFile"
 		cp $BackupInfoTxtFile ${RESTORE_BASE}/backup_info.txt
 		CheckExit
-	        MSG="Copy BackupInfoFile"
+		$CONTINUE
+		
+	    #MSG="Copy BackupInfoFile"
 		cp $BackupInfoFile ${RESTORE_BASE}/backup/bahmni-postgres/backup.info
 		CheckExit
+		$CONTINUE
 
 		# Call doRestore Function
 		   MSG="doRestore"
 		   doRestore postgres
 		   CheckExit
-		
+		   $CONTINUE
+			
 		# Check Restore status
 		MSG="Check Final Restore status"
 		psql -Uodoo odoo -c 'select name from res_company'
@@ -147,8 +183,7 @@ for Client in `ls -l|grep ^d|awk '{print $NF}'`
 
 
 case $DB in 
-	mysql) Prefix=openmrs \
-	           mysqlRestore ;;
-	     pg) Prefix=openerp \
-	           pgRestore ;;
+	mysql) Prefix=openmrs mysqlRestore ;;
+           pg) Prefix=openerp pgRestore ;;
 esac
+exit 0
