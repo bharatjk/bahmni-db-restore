@@ -52,6 +52,14 @@ MSG="Run Restore Job"
 docker exec -it bahmni$DB  /data/restore.sh $RESTORE
 CheckExit
 #docker exec -it bahmni$DB  bash
+#Send SMS
+Today=`date +%D`
+#message=`grep "Failed\,$Today" /root/$DB-Restore_status.txt|awk -F\, '{print $4,$5}' ORS=,`
+message=`grep "Failed\,$Today" /root/$DB-Restore_status.txt`
+if [ -n "$message" ] ;then
+   echo "found Failed Staus for $message"
+   http://103.16.101.52:8080/bulksms/bulksms?username=ints-siddhivina&password=sa1233&type=0&dlr=1&destination=919987782575&source=SMGHTN&message='$message'
+    [ $? = 0 ] && echo " Status SMS sent "
+fi
 CleanContainer
-
 echo "=========== End `date +%D,%T` ==================================="
