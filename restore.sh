@@ -31,6 +31,9 @@ CheckExit ()
 	echo "Failed,`date +%D,%T`,$Client,$backuprootFolder,Failed Task: $MSG " >>$Outfile
 	cd ..
 	CONTINUE=continue
+	BackupTarFile=""
+	BackupInfoTxtFile=""
+	BackupInfoFil=""
       else
 	CONTINUE=""
      fi
@@ -58,25 +61,27 @@ doRestore ()
 
 mysqlRestore ()
 { 
-  BackupTarFile=${Prefix}${thisWeek}.tar.gz
-  BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt	   
-		
-  cd $SRC_BACKUPDIR
+cd $SRC_BACKUPDIR
   for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
      do
        cd $Client
-	   
-	   MSG="Check last backup files or set backup files"
-       [ -n "$lastbackup" ] && thisWeek=`ls -t $BackupTarFile  2>/dev/null|head -1|cut -c8` 
-       if [ -n "$thisWeek" ] ; then
-			 BackupTarFile=${Prefix}${thisWeek}.tar.gz
-		     BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt	
-		  else
-		    CheckExit
-		    $CONTINUE
-       fi
+       echo PWD=$PWD
+       MSG="Check last backup files or set backup files"
+       if [ -n "$lastbackup" ] ; then
+          thisWeek=`ls -t $BackupTarFile  2>/dev/null|head -1|cut -c8` 
+       	    if [ -n "$thisWeek" ] ; then
+	       BackupTarFile=${Prefix}${thisWeek}.tar.gz
+	       BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt	
+	    else
+	    	CheckExit
+		$CONTINUE
+	    fi
+	 else    
+	       BackupTarFile=${Prefix}${thisWeek}.tar.gz
+	       BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt
+         fi
 	   		
-		MSG="Check input backup files"
+	MSG="Check input backup files"
     	[  -s  $BackupTarFile -a  -s  $BackupInfoTxtFile ] 
 	    CheckExit
         echo 	BackupTarFile=$BackupTarFile BackupInfoTxtFile=$BackupInfoTxtFile	
@@ -114,9 +119,7 @@ done
 
 pgRestore ()
 {
-	 BackupTarFile=${Prefix}${thisWeek}.tar.gz
-	 BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
-	 BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
+
 	   
 RESTORE_BASE=/var/lib/pgbackrest/
 [ ! -d /var/log/backrest/  ] && mkdir /var/log/backrest/ 
@@ -127,19 +130,23 @@ cd $SRC_BACKUPDIR
 for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
    do
        cd $Client
-	   echo PWD=$PWD
-
+	echo PWD=$PWD
        MSG="Set backup files"
-	   [ -n "$lastbackup" ] && thisWeek=`ls -t $BackupTarFile  2>/dev/null|head -1|cut -c8` 
-       if [ -n "$thisWeek" ] ; then
-			BackupTarFile=${Prefix}${thisWeek}.tar.gz
-			BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
-			BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
-          else
-		   CheckExit
-		   $CONTINUE
-       fi
-
+       if [ -n "$lastbackup" ] ; then 
+          thisWeek=`ls -t $BackupTarFile  2>/dev/null|head -1|cut -c8` 
+            if [ -n "$thisWeek" ] ; then
+		BackupTarFile=${Prefix}${thisWeek}.tar.gz
+		BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
+		BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
+             else
+		CheckExit
+		$CONTINUE
+            fi
+	 else
+	   BackupTarFile=${Prefix}${thisWeek}.tar.gz
+	   BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
+	   BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
+	fi
 	    MSG="Check input backup files"
     	[  -f  $BackupTarFile -a  -f  $BackupInfoTxtFile -a  -f  $BackupInfoFile ] 
 	    CheckExit
