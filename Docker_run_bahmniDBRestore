@@ -58,7 +58,7 @@ Today=`date +%D`
 message=`grep "Failed\,$Today" /root/$DB-Restore_status.txt`
 if [ -n "$message" ] ;then
    echo "found Failed Staus for $message"
-   curl 
+   #curl 
     [ $? = 0 ] && echo " Status SMS sent "
 fi
 CleanContainer
