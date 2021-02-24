@@ -64,7 +64,10 @@ mysqlRestore ()
 cd $SRC_BACKUPDIR
   for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
      do
+       MSG="cd $Client"
        cd $Client
+       CheckExit
+       $CONTINUE
        echo PWD=$PWD
        MSG="Check last backup files or set backup files"
        if [ -n "$lastbackup" ] ; then
@@ -84,7 +87,7 @@ cd $SRC_BACKUPDIR
 	MSG="Check input backup files"
     	[  -s  $BackupTarFile -a  -s  $BackupInfoTxtFile ] 
 	    CheckExit
-        echo 	BackupTarFile=$BackupTarFile BackupInfoTxtFile=$BackupInfoTxtFile	
+           echo BackupTarFile=$BackupTarFile BackupInfoTxtFile=$BackupInfoTxtFile	
 	    $CONTINUE
 	
 		#Extract bckup to /data/openmrs
