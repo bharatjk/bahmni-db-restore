@@ -60,13 +60,15 @@ doRestore ()
 
 mysqlRestore ()
 { 
+BackupTarFile=${Prefix}${thisWeek}.tar.gz
+BackupInfoTxtFile=${Prefix}_backup_info${thisWeek}.txt
 cd $SRC_BACKUPDIR
 
   for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
      do
        export Restorelog=${BASEDIR}/${Client}-${DB}-Restore.log
        MSG="cd $Client"
-       cd $Client
+       cd "$Client"
        CheckExit
        $CONTINUE
        echo PWD=$PWD
@@ -123,19 +125,18 @@ done
 
 pgRestore ()
 {
-
-	   
-RESTORE_BASE=/var/lib/pgbackrest/
+ BackupTarFile=${Prefix}${thisWeek}.tar.gz
+ BackupInfoTxtFile=${Prefix}backup_info${thisWeek}.txt
+ BackupInfoFile=${Prefix}bfbackup.info${thisWeek}
+ RESTORE_BASE=/var/lib/pgbackrest/
 [ ! -d /var/log/backrest/  ] && mkdir /var/log/backrest/ 
-
-
 cd $SRC_BACKUPDIR
 
 for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
    do
      export Restorelog=${BASEDIR}/${Client}-${DB}-Restore.log
        MSG="cd $Client"
-       cd $Client
+       cd "$Client"
        CheckExit
        MSG="Set backup files"
        if [ -n "$lastbackup" ] ; then 
