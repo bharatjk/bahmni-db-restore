@@ -22,7 +22,6 @@ echo thisWeek=$thisWeek
 
 SRC_BACKUPDIR=${BASEDIR}/backup
 Outfile=${BASEDIR}/${DB}-Restore_status.txt
-Restorelog=${BASEDIR}/${DB}-Restore.log
 
 CheckExit ()
 {
@@ -62,8 +61,10 @@ doRestore ()
 mysqlRestore ()
 { 
 cd $SRC_BACKUPDIR
+
   for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
      do
+       export Restorelog=${BASEDIR}/${Client}-${DB}-Restore.log
        MSG="cd $Client"
        cd $Client
        CheckExit
@@ -132,8 +133,10 @@ cd $SRC_BACKUPDIR
 
 for Client in `ls -l|grep ^d|awk '{print $NF}'|$GREP`
    do
+     export Restorelog=${BASEDIR}/${Client}-${DB}-Restore.log
+       MSG="cd $Client"
        cd $Client
-	echo PWD=$PWD
+       CheckExit
        MSG="Set backup files"
        if [ -n "$lastbackup" ] ; then 
           thisWeek=`ls -t $BackupTarFile  2>/dev/null|head -1|cut -c8` 
