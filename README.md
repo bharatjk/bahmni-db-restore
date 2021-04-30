@@ -1,7 +1,7 @@
 # bahmni-db-restore
 
 This script tests the sanctity of Bahmni backup by restoring it using docker.
-# inputs supported options are -d -c -e -n -l
+ supported options are -d -c -e -n -l
 #  
 #    -d is for dbname, this is compulsory input,  currently supported input for this is [ db or mysql ]
 # By default restore will scan backup files in /data/backup/* and try to restore for current week
