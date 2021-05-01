@@ -30,9 +30,9 @@ CheckExit ()
 	echo "Failed,`date +%D,%T`,$Client,$backuprootFolder,Failed Task: $MSG " >>$Outfile
 	cd ..
 	CONTINUE=continue
-	BackupTarFile=""
-	BackupInfoTxtFile=""
-	BackupInfoFil=""
+	#BackupTarFile=""
+	#BackupInfoTxtFile=""
+	#BackupInfoFil=""
       else
 	CONTINUE=""
      fi
